@@ -6,16 +6,13 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-regex = "*"
 directories = "*"
 path-slash = "*"
 
 [dependencies.windows]
 version = "*"
 features = [
+    "Win32_System_Services",
     "Win32_Foundation",
-    "Win32_System_Threading",
-    "Win32_Graphics_Gdi",
-    "Win32_System_LibraryLoader",
-    "Win32_UI_WindowsAndMessaging",
+    "Win32_Security",
 ]
