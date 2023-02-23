@@ -9,10 +9,10 @@ use std::process::Command;
 
 #[derive(Debug)]
 pub struct WSLInfo {
-    distro: String,
-    state: bool,
-    version: u8,
-    ip: String,
+    pub distro: String,
+    pub state: bool,
+    pub version: u8,
+    pub ip: String,
 }
 
 pub fn list_all() -> Vec<WSLInfo> {
