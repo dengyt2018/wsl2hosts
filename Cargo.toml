@@ -8,11 +8,17 @@ edition = "2021"
 [dependencies]
 directories = "*"
 path-slash = "*"
+clap = {version = "*", features = ["derive"]}
+service-manager = "*"
 
-[dependencies.windows]
-version = "*"
-features = [
-    "Win32_System_Services",
-    "Win32_Foundation",
-    "Win32_Security",
-]
+[[bin]]
+name = "wsl2hosts"
+path = "src/main.rs"
+
+[profile.release]
+debug = 0         # No debug info at all
+strip = true      # Automatically strip symbols from the binary.
+opt-level = "z"   # Optimize for size.
+lto = true        # Enable Link Time Optimization (LTO)
+codegen-units = 1 # Reduce Parallel Code Generation Units to Increase Optimization
+panic = "abort"   # Abort on Panic

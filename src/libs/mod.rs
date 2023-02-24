@@ -1,3 +1,4 @@
+pub mod command;
 pub mod hosts;
 pub mod service;
 pub mod utils;

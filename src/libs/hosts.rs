@@ -15,8 +15,7 @@ pub mod parse_hosts {
         only_comment: bool,
     }
 
-    //const HOSTS_FILE_PATH: &str = "C:/Windows/System32/drivers/etc/hosts";
-    const HOSTS_FILE_PATH: &str = "E:/hosts";
+    const HOSTS_FILE_PATH: &str = "C:/Windows/System32/drivers/etc/hosts";
 
     pub fn parse_hosts() {
         write_string_to_hosts();
@@ -130,13 +129,4 @@ pub mod parse_hosts {
         f.write_all(hosts_string.as_bytes());
         f.flush();
     }
-}
-
-#[cfg(test)]
-mod parse_hosts_file_test {
-
-    const HOSTS_FILE_PATH: &str = "E:/hosts";
-
-    #[test]
-    fn parse_test() {}
 }
