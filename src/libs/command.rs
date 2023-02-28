@@ -13,5 +13,7 @@ pub mod wsl2hosts_command {
         Run,
         Install,
         Remove,
+        Stop,
+        Debug,
     }
 }

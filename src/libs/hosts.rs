@@ -1,13 +1,17 @@
 #![allow(unused, dead_code, unused_variables)]
 
 pub mod parse_hosts {
-    use crate::libs::wsl_cli::{get_ip, list_all};
+    use crate::libs::wsl_cli::{get_ip, list_all_running_wsl};
+    use log::{debug, error, info};
     use std::fs::{File, OpenOptions};
     use std::io;
     use std::io::{BufRead, BufReader, LineWriter, Lines, Write};
     use std::iter::Flatten;
     use std::path::Path;
+    use std::thread::sleep;
+    use std::time::Duration;
 
+    #[derive(Debug)]
     struct Hosts {
         comment: String,
         ip: String,
@@ -15,42 +19,71 @@ pub mod parse_hosts {
         only_comment: bool,
     }
 
-    const HOSTS_FILE_PATH: &str = "C:/Windows/System32/drivers/etc/hosts";
+    impl Default for Hosts {
+        fn default() -> Self {
+            Hosts {
+                comment: "".to_string(),
+                ip: "127.0.0.1".to_string(),
+                distro: "".to_string(),
+                only_comment: false,
+            }
+        }
+    }
+
+    //const HOSTS_FILE_PATH: &str = "C:/Windows/System32/drivers/etc/hosts";
+    const HOSTS_FILE_PATH: &str = "E:/hosts";
 
     pub fn parse_hosts() {
+        let seconds = 5;
         write_string_to_hosts();
+        sleep(Duration::from_secs(seconds));
+
+        debug!(
+            "\n\n===============================================================\n\
+        =====================write string to hosts=====================\n\
+        ==============================================================="
+        );
+        debug!("sleep {} seconds", seconds);
     }
 
     fn serde_hosts_file() -> Vec<Hosts> {
-        let path = Path::new(HOSTS_FILE_PATH);
-        let hosts_file = File::open(path).expect("Open hosts file failed.");
+        let hosts_file_path = Path::new(HOSTS_FILE_PATH);
+        debug!(
+            "Start serde hosts file path: {}",
+            &hosts_file_path.to_str().unwrap()
+        );
 
-        let mut hosts_string = String::new();
+        match File::open(hosts_file_path) {
+            Ok(hosts_file) => {
+                let mut hosts_string = String::new();
+                let lines = io::BufReader::new(hosts_file).lines();
+                let mut serde_hosts = Vec::new();
+                for line in lines.flatten() {
+                    let mut hosts = Hosts::default();
 
-        let lines = io::BufReader::new(hosts_file).lines();
-        let mut serde_hosts = Vec::new();
-        for line in lines.flatten() {
-            let mut hosts = Hosts {
-                comment: "\n".to_string(),
-                ip: "".to_string(),
-                distro: "".to_string(),
-                only_comment: false,
-            };
+                    if line.starts_with('#') {
+                        hosts.comment = line;
+                        hosts.only_comment = true;
+                    } else {
+                        parse_hosts_line(&line, &mut hosts);
+                    }
 
-            if line.starts_with('#') {
-                hosts.comment = line;
-                hosts.only_comment = true;
-            } else {
-                parse_hosts_line(&line, &mut hosts);
+                    serde_hosts.append(&mut vec![hosts]);
+                }
+                debug!("Serde hosts file done");
+
+                serde_hosts
             }
-
-            serde_hosts.append(&mut vec![hosts]);
+            Err(e) => {
+                error!("Open hosts file error {}", e);
+                vec![Hosts::default()]
+            }
         }
-
-        serde_hosts
     }
 
     fn serde_hosts_to_string(serde_hosts: &Vec<Hosts>) -> String {
+        debug!("Start serde hosts to string");
+
         let mut hosts_string = String::new();
         for host in serde_hosts {
             if host.only_comment {
@@ -66,12 +99,15 @@ pub mod parse_hosts {
                 }
             }
             hosts_string.push('\n');
+            debug!("Hosts Info to string done {:?}", &host);
         }
+
         hosts_string
     }
 
     fn parse_hosts_line(line: &str, hosts: &mut Hosts) {
-        if line.contains(' ') {
+        // '::1 A' a local host maybe like this, only five char
+        if line.contains(' ') && line.len() >= 5 {
             let host_split = line.split(' ');
             let mut host_vec = Vec::new();
             for info in host_split {
@@ -91,18 +127,17 @@ pub mod parse_hosts {
     }
 
     fn write_string_to_hosts() {
+        debug!("Start write WSL host information to hosts file");
         let mut hosts_serde = serde_hosts_file();
 
-        let mut infos = list_all();
+        let mut all_wsl_infos = list_all_running_wsl();
 
-        for mut info in infos {
-            get_ip(&mut info);
-
+        for mut wsl_info in all_wsl_infos {
             let mut change = false;
 
             for mut host in &mut hosts_serde {
-                if info.distro.eq_ignore_ascii_case(&host.distro) {
-                    host.ip = info.ip.to_string();
+                if wsl_info.distro.eq_ignore_ascii_case(&host.distro) {
+                    host.ip = wsl_info.ip.to_string();
                     host.comment = "# wsl2hosts".to_string();
                     change = true;
                 }
@@ -110,8 +145,8 @@ pub mod parse_hosts {
             if !change {
                 hosts_serde.append(&mut vec![Hosts {
                     comment: "# wsl2hosts".to_string(),
-                    ip: info.ip,
-                    distro: info.distro.to_ascii_lowercase(),
+                    ip: wsl_info.ip,
+                    distro: wsl_info.distro.to_ascii_lowercase(),
                     only_comment: false,
                 }]);
             }
@@ -119,14 +154,17 @@ pub mod parse_hosts {
 
         let hosts_string = serde_hosts_to_string(&hosts_serde);
 
-        let file = OpenOptions::new()
+        if let Ok(file) = OpenOptions::new()
             .read(true)
             .write(true)
             .open(Path::new(HOSTS_FILE_PATH))
-            .expect("");
-
-        let mut f = LineWriter::new(file);
-        f.write_all(hosts_string.as_bytes());
-        f.flush();
+        {
+            let mut f = LineWriter::new(file);
+            f.write_all(hosts_string.as_bytes());
+            f.flush();
+            debug!("All new hosts info write to hosts done");
+        } else {
+            error!("Permission Denied. command need access privilege");
+        }
     }
 }
