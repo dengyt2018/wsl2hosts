@@ -1,12 +1,13 @@
 #![allow(unused, dead_code, unused_variables)]
 
-use crate::libs::utils::decode_output;
+use crate::libs::decode_output;
 use log::{debug, error, info, warn};
 use path_slash::{PathBufExt, PathExt};
 use std::fs::File;
 use std::io::{stdout, LineWriter, Write};
+use std::os::windows::process::CommandExt;
 use std::path::{Path, PathBuf};
-use std::process::Command;
+use std::process::{Command, Stdio};
 
 #[derive(Debug)]
 pub struct WSLInfo {
@@ -28,17 +29,24 @@ impl Default for WSLInfo {
 }
 
 const EXEC_WSL_PATH: &str = "C:\\Windows\\System32\\wsl.exe";
+const CREATE_NO_WINDOW: u32 = 0x08000000;
+const DETACHED_PROCESS: u32 = 0x00000008;
 
 pub fn list_all_running_wsl() -> Vec<WSLInfo> {
     debug!("Start command wsl -l -v list running wsl");
 
-    let stdout = Command::new(EXEC_WSL_PATH)
-        .args(["-l", "-v"])
+    let stdout = Command::new("cmd")
+        .creation_flags(CREATE_NO_WINDOW)
+        .args(["/c", "wsl", "-l", "-v"])
+        .stdout(Stdio::piped())
         .output()
         .expect("execute wsl -l -v failed.");
 
     debug!("Raw stdout.status {}", &stdout.status);
-    error!("Raw stdout.stderr {:?}", decode_output(&stdout.stderr));
+    let e = decode_output(&stdout.stderr);
+    if !e.is_empty() {
+        error!("Raw stdout.stderr {:?}", e);
+    }
 
     let output = decode_output(&stdout.stdout);
     debug!("Command wsl -l -v output message \n{}", &output);
@@ -126,14 +134,18 @@ pub fn get_ip(distro: &mut WSLInfo) -> &WSLInfo {
     let script_name = "getip.sh";
     let getip_script_file_path = create_script_file(script_name);
 
-    match Command::new(EXEC_WSL_PATH)
+    match Command::new("cmd")
+        .creation_flags(CREATE_NO_WINDOW)
         .args([
+            "/c",
+            "wsl",
             "-d",
             &distro.distro,
             "--",
             "sh",
             &format!("/mnt/{}", &getip_script_file_path),
         ])
+        .stdout(Stdio::piped())
         .output()
     {
         Ok(stdout) => {

@@ -19,6 +19,11 @@ flexi_logger = "0.25"
 whoami = "1.3"
 rpassword = "7.2"
 planif = "0.2"
+chrono = "0.4"
+
+[target.'cfg(windows)'.dependencies.windows]
+version = "0.44"
+features = ["Win32_System_TaskScheduler", "Win32_Foundation", "Win32_System_Com", "Win32_System_Ole", "implement"]
 
 [[bin]]
 name = "wsl2hosts"

@@ -86,6 +86,9 @@ pub mod parse_hosts {
 
         let mut hosts_string = String::new();
         for host in serde_hosts {
+            if host.distro.is_empty() && host.comment.is_empty() {
+                continue;
+            }
             if host.only_comment {
                 hosts_string.push_str(host.comment.as_str());
             } else {
@@ -154,17 +157,20 @@ pub mod parse_hosts {
 
         let hosts_string = serde_hosts_to_string(&hosts_serde);
 
-        if let Ok(file) = OpenOptions::new()
+        match OpenOptions::new()
             .read(true)
             .write(true)
             .open(Path::new(HOSTS_FILE_PATH))
         {
-            let mut f = LineWriter::new(file);
-            f.write_all(hosts_string.as_bytes());
-            f.flush();
-            debug!("All new hosts info write to hosts done");
-        } else {
-            error!("Permission Denied. command need access privilege");
+            Ok(file) => {
+                let mut f = LineWriter::new(file);
+                f.write_all(hosts_string.as_bytes());
+                f.flush();
+                debug!("All new hosts info write to hosts done");
+            }
+            Err(e) => {
+                error!("{}", e);
+            }
         }
     }
 }
