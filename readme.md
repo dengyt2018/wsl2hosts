@@ -1,3 +1,5 @@
+a rust version wsl ip to hosts for practicing rust.
+
 ```bat
 cargo rustc --release -- -Clink-args="-Wl,--subsystem,windows"
 
