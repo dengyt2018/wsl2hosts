@@ -49,12 +49,18 @@ fn prepare_logging(out: &str) -> Result<(), Box<dyn std::error::Error>> {
 fn main() {
     let args = Cli::parse();
 
+    if args.mode.is_none() {
+        prepare_logging("info").unwrap();
+        loop_parse();
+        debug!("launch without argument");
+    } else if args.mode.eq(&Some(Mode::Debug)) {
+        prepare_logging("debug").unwrap();
+        debug!("launch with argument DEBUG");
+        parse_hosts();
+    }
+
     match args.mode {
-        None => {
-            prepare_logging("info").unwrap();
-            loop_parse();
-            debug!("launch without argument");
-        }
+        None => {}
         Some(mode) => match mode {
             Mode::Run => {
                 task_scheduler(Mode::Run).unwrap();
@@ -74,11 +80,7 @@ fn main() {
                 task_scheduler(Mode::Stop).unwrap();
                 debug!("launch with argument STOP");
             }
-            Mode::Debug => {
-                prepare_logging("debug").unwrap();
-                debug!("launch with argument DEBUG");
-                parse_hosts();
-            }
+            _ => {}
         },
     };
 }

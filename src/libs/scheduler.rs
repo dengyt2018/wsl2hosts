@@ -1,5 +1,3 @@
-#[allow(unused, unused_imports)]
-
 pub mod wsl_task_scheduler {
     use crate::libs::{time_rfc3339, Mode};
     use planif::enums::TaskCreationFlags;
@@ -46,7 +44,7 @@ pub mod wsl_task_scheduler {
                     registered_task.Run(VARIANT::default())?;
                 }
                 Mode::Stop => {
-                    registered_task.Stop(0);
+                    registered_task.Stop(0)?;
                 }
                 Mode::Remove => {
                     root_folder.DeleteTask(&name, 0)?;
@@ -71,9 +69,4 @@ pub mod wsl_task_scheduler {
             Ok(task_service)
         }
     }
-}
-
-#[test]
-fn test() {
-    wsl_task_scheduler::create_task_scheduler().unwrap();
 }

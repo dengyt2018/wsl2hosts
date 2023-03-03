@@ -30,8 +30,7 @@ pub mod parse_hosts {
         }
     }
 
-    //const HOSTS_FILE_PATH: &str = "C:/Windows/System32/drivers/etc/hosts";
-    const HOSTS_FILE_PATH: &str = "E:/hosts";
+    const HOSTS_FILE_PATH: &str = "C:/Windows/System32/drivers/etc/hosts";
 
     pub fn parse_hosts() {
         let seconds = 5;
